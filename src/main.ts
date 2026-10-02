@@ -1,6 +1,7 @@
 import "./style.css";
 import * as THREE from "three";
 import { Board } from "./components/Board";
+import { Pumpkin } from "./components/boardElements";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const sizes = {
@@ -34,15 +35,20 @@ const camera = new THREE.OrthographicCamera(
 camera.position.set(10, 10, 10);
 camera.lookAt(0, 0, 0);
 
+// Board
+const board = new Board();
+scene.add(board.trayGroup);
+scene.add(board.casingGroup);
+
+// Pumpkin
+const pumpkin = new Pumpkin(board.wallHeight);
+scene.add(pumpkin.pumpkinMesh);
+
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 app.appendChild(renderer.domElement);
-
-const board = new Board();
-scene.add(board.trayGroup);
-scene.add(board.casingGroup);
 
 // Resize
 window.addEventListener("resize", () => {

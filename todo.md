@@ -4,6 +4,8 @@
 >
 > The player controls the board, not the pumpkin.
 > Design detail lives in [project.md](project.md).
+>
+> **Physics:** use [`cannon-es`](https://github.com/pmndrs/cannon-es) (not the old `cannon` package). Keep physics bodies separate from Three.js visuals; sync body → mesh each frame.
 
 Priority order: **Feel → Gameplay → Level design → Interaction → Visual identity → Polish**
 
@@ -15,45 +17,65 @@ Deps (`three`, `gsap`, `lil-gui`) are already installed. Start from the Vite sca
 
 - [x] Strip Vite starter UI from `src/main.ts` / `index.html`
 - [x] Create Three.js scene: renderer, scene, lights placeholder, resize handler, animation loop
+- [ ] Install `cannon-es`
 - [ ] Add a lightweight folder scaffold as needed (`components/`, `systems/`, `levels/`, `utils/`) — do not over-engineer before the prototype exists
+- [ ] Create a physics world helper (e.g. `systems/physics.ts`): `World`, gravity, broadphase/solver defaults
+- [ ] Step the world every frame (`world.fixedStep()` / `step`)
+- [ ] Sync pattern: after each physics step, copy body position/quaternion → matching mesh
 
 ---
 
 ## Phase 1 — Basic Prototype (Feel)
 
-Goal: test the fundamental tilt → gravity → roll loop with generic geometry. No Halloween theme.
+Goal: test the fundamental tilt → roll loop with generic geometry + Cannon. No Halloween theme.
 
 - [x] Orthographic (isometric-style) camera framed on the full board
 - [x] Simple rectangular board mesh
 - [x] Simple walls around the board
-- [ ] Simple sphere as the rolling object
-- [ ] Keyboard input that drives board rotation (W, A, S, D)
-- [ ] Smooth/interpolate board tilt (do not snap rotation directly from keyboard)
-- [ ] Derive gravity vector from board tilt
-- [ ] Accelerate sphere from gravity; update velocity and position each frame
-- [ ] Sphere–wall collision so the sphere stays on the board
-- [ ] Tuning so the player can tilt, counter-steer, and stop the sphere reasonably reliably
+- [x] Simple sphere as the rolling object
 
-**Gate — do not proceed until this feels good:** keyboard move → board tilts → sphere responds with inertia → counter-steer works.
+### Input & tray tilt
+
+- [ ] Keyboard input that drives board rotation (W, A, S, D)
+- [ ] Smooth/interpolate tray tilt (do not snap rotation directly from keyboard)
+- [ ] Tilt **tray only** (`trayGroup`); casing stays fixed
+
+### Cannon bodies
+
+- [ ] Cannon ground body matching the tray floor (box or plane)
+- [ ] Cannon wall bodies matching the rim walls
+- [ ] Cannon sphere body for the pumpkin (radius = visual sphere radius)
+- [ ] Decide tilt approach for v1:
+  - rotate tray physics bodies with the visual tray, **or**
+  - keep bodies fixed and set `world.gravity` from tilt angle
+- [ ] Wire visuals ↔ bodies (tray meshes ↔ tray bodies, pumpkin mesh ↔ sphere body)
+
+### Feel gate
+
+- [ ] Tune mass, friction, restitution, and max tilt until counter-steer feels good
+- [ ] Sphere stays on the board via Cannon collisions (no DIY wall math)
+
+**Gate — do not proceed until this feels good:** keyboard → board tilts → sphere responds with inertia → counter-steer works.
 
 ---
 
 ## Phase 2 — Holes
 
-Introduce the main failure mechanic. Holes must have real gameplay consequences, not just visuals.
+Introduce the main failure mechanic. Cannon does not model holes for free — use gameplay detection on top of physics.
 
-- [ ] Add several holes to the board
-- [ ] Detect when the sphere falls into a hole
-- [ ] Animate / simulate the sphere falling through
-- [ ] Reset the sphere to the start after a fall
+- [ ] Add several hole visuals / regions on the board
+- [ ] Detect when the sphere is over a hole (trigger volumes, overlap checks, or similar)
+- [ ] Let the sphere fall through (disable floor support / allow gravity to take it)
+- [ ] Reset the sphere body + mesh to the start after a fall
 
 ---
 
 ## Phase 3 — Level Design (First Maze)
 
-First hand-designed maze using primitive geometry. Prefer a small, readable puzzle board.
+First hand-designed maze using primitive geometry + matching Cannon colliders. Prefer a small, readable puzzle board.
 
 - [ ] Design one small maze layout (walls, narrow passages, open areas, dead ends, holes)
+- [ ] Create Cannon bodies for inner maze walls (not only the rim)
 - [ ] Place holes so the player must manage momentum and counter-steer
 - [ ] Verify the level is understandable at a glance from the orthographic camera
 - [ ] Keep focusing on control feel, not graphics
@@ -65,7 +87,7 @@ First hand-designed maze using primitive geometry. Prefer a small, readable puzz
 Introduce the win path: collect all candy, then reach the exit.
 
 - [ ] Add candy collectibles to the level
-- [ ] Collection detection when the sphere touches candy
+- [ ] Collection detection (Cannon contact/trigger or distance check)
 - [ ] Remove / hide candy on collect
 - [ ] Candy counter UI (`CANDY x / y`)
 - [ ] Place some candy in risky spots (near holes, behind obstacles, narrow corridors)
@@ -76,13 +98,13 @@ Introduce the win path: collect all candy, then reach the exit.
 
 ## Phase 5 — Pumpkin Model
 
-Replace the prototype sphere with a custom pumpkin. Keep physics separate from visuals.
+Replace the prototype sphere visual with a custom pumpkin. **Keep the Cannon sphere collider.**
 
 - [ ] Model a simple pumpkin in Blender (body, grooves, stem; optional carved face)
 - [ ] Export as GLB/GLTF and load in Three.js
-- [ ] Keep an invisible sphere (or equivalent) as the physics collider
-- [ ] Attach the pumpkin visual so it follows the physics object
-- [ ] Sync visual rolling rotation with physics velocity
+- [ ] Keep the Cannon sphere body as the physics collider
+- [ ] Attach the pumpkin visual so it follows the physics body each frame
+- [ ] Sync visual rolling rotation with the physics body quaternion / velocity
 
 ---
 
@@ -90,7 +112,7 @@ Replace the prototype sphere with a custom pumpkin. Keep physics separate from v
 
 Replace generic obstacles with themed assets. Aim for a miniature Halloween diorama / wooden toy look.
 
-- [ ] Gravestones as primary walls / obstacles
+- [ ] Gravestones as primary walls / obstacles (update visuals; keep/adjust Cannon colliders)
 - [ ] Wooden fences
 - [ ] Dead trees, rocks, candles, pumpkin decorations, spider webs
 - [ ] Wooden board material / board presentation
@@ -104,8 +126,8 @@ First moving enemy. No AI, chasing, or complex rigging in v1.
 
 - [ ] Build a procedural spider from simple geometry (body, head, 8 legs, eyes)
 - [ ] Define patrol paths for spiders
-- [ ] Move spiders continuously along their paths
-- [ ] Detect spider–pumpkin collision
+- [ ] Move spiders continuously along their paths (kinematic body or synced collider)
+- [ ] Detect spider–pumpkin collision (Cannon contact)
 - [ ] Apply penalty / reset on collision
 - [ ] Add simple leg / body motion synced to patrol movement
 
@@ -116,7 +138,7 @@ First moving enemy. No AI, chasing, or complex rigging in v1.
 Establish a complete, simple game loop once mechanics work.
 
 - [ ] Start state: pumpkin, lives, level with candy
-- [ ] Fail state: hole or spider → lose a life + checkpoint return or level reset
+- [ ] Fail state: hole or spider → lose a life + checkpoint return or level reset (reset physics body state)
 - [ ] Complete state: all candy collected → exit unlocked → reach exit to win
 - [ ] Basic HUD for lives, candy count, and exit status
 - [ ] Keep the first fail/recover implementation simple
@@ -177,4 +199,5 @@ Do not start with these until the core tilt/roll loop and basic gameplay are fun
 - Complex shaders / detailed Blender environments
 - Multiplayer
 - Large levels or complicated UI
-- Over-engineered physics architecture
+- Custom hand-rolled physics (use `cannon-es` instead)
+- Over-engineered physics architecture beyond a simple world + body sync
