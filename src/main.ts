@@ -2,6 +2,7 @@ import "./style.css";
 import * as THREE from "three";
 import { Board } from "./components/Board";
 import { Pumpkin } from "./components/boardElements";
+import { cursor } from "./system/input";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const sizes = {
@@ -37,6 +38,8 @@ camera.lookAt(0, 0, 0);
 
 // Board
 const board = new Board();
+console.log(board);
+
 scene.add(board.trayGroup);
 scene.add(board.casingGroup);
 
@@ -67,7 +70,15 @@ window.addEventListener("resize", () => {
 });
 
 // Loop
+const maxTilt = 0.25;
+
 const tick = () => {
+  const tiltX = (cursor.x - cursor.y) * maxTilt;
+  const tiltZ = (cursor.x + cursor.y) * maxTilt;
+
+  board.trayGroup.rotation.x = tiltX;
+  board.trayGroup.rotation.z = tiltZ;
+
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
 };

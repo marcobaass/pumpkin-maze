@@ -17,7 +17,7 @@ Deps (`three`, `gsap`, `lil-gui`) are already installed. Start from the Vite sca
 
 - [x] Strip Vite starter UI from `src/main.ts` / `index.html`
 - [x] Create Three.js scene: renderer, scene, lights placeholder, resize handler, animation loop
-- [ ] Install `cannon-es`
+- [x] Install `cannon-es`
 - [ ] Add a lightweight folder scaffold as needed (`components/`, `systems/`, `levels/`, `utils/`) — do not over-engineer before the prototype exists
 - [ ] Create a physics world helper (e.g. `systems/physics.ts`): `World`, gravity, broadphase/solver defaults
 - [ ] Step the world every frame (`world.fixedStep()` / `step`)
@@ -36,9 +36,9 @@ Goal: test the fundamental tilt → roll loop with generic geometry + Cannon. No
 
 ### Input & tray tilt
 
-- [ ] Keyboard input that drives board rotation (W, A, S, D)
-- [ ] Smooth/interpolate tray tilt (do not snap rotation directly from keyboard)
-- [ ] Tilt **tray only** (`trayGroup`); casing stays fixed
+- [x] Mouse input that drives board rotation
+- [ ] Smooth/interpolate tray tilt (do not snap rotation directly from mouse input)
+- [x] Tilt **tray only** (`trayGroup`); casing stays fixed
 
 ### Cannon bodies
 
