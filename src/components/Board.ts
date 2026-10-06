@@ -8,6 +8,7 @@ export class Board {
   wallHeight = 0.5;
   wallThickness = 0.25;
   trayBody = new CANNON.Body({ type: CANNON.Body.KINEMATIC });
+  casingBody = new CANNON.Body({ type: CANNON.Body.STATIC });
 
   constructor() {
     const size = 10;
@@ -19,6 +20,7 @@ export class Board {
     this.createTray(size, color, half);
     this.createCasing(size, gap, casingColor, half);
     this.trayBody.material = trayMaterial;
+    this.casingBody.material = trayMaterial;
   }
 
   private createTray(size: number, color: number, half: number) {
@@ -106,6 +108,9 @@ export class Board {
 
   // Casing
   private createCasing(size: number, gap: number, color: number, half: number) {
+    const casingHalfLengthZ = (size + this.wallThickness * 2 + gap * 2) / 2;
+    const casingHalfLengthX = (size + this.wallThickness * 4 + gap * 2) / 2;
+    const casingHalfHeight = (this.wallHeight * 4) / 2;
     const casingWallConfig = [
       {
         geo: new THREE.BoxGeometry(
@@ -113,6 +118,7 @@ export class Board {
           this.wallHeight * 4,
           this.wallThickness,
         ),
+        halfLength: casingHalfLengthZ,
         x: 0,
         z: half + this.wallThickness + gap,
         rotY: 0,
@@ -123,6 +129,7 @@ export class Board {
           this.wallHeight * 4,
           this.wallThickness,
         ),
+        halfLength: casingHalfLengthX,
         x: half + this.wallThickness + gap,
         z: 0,
         rotY: Math.PI / 2,
@@ -133,6 +140,7 @@ export class Board {
           this.wallHeight * 4,
           this.wallThickness,
         ),
+        halfLength: casingHalfLengthZ,
         x: 0,
         z: -half - this.wallThickness - gap,
         rotY: Math.PI,
@@ -143,20 +151,55 @@ export class Board {
           this.wallHeight * 4,
           this.wallThickness,
         ),
+        halfLength: casingHalfLengthX,
         x: -half - this.wallThickness - gap,
         z: 0,
         rotY: Math.PI / 2,
       },
     ];
 
-    for (const { geo, x, z, rotY } of casingWallConfig) {
+    // Casing walls
+    for (const { geo, halfLength, x, z, rotY } of casingWallConfig) {
+      // Visual walls
       const wall = new THREE.Mesh(
         geo,
         new THREE.MeshStandardMaterial({ color }),
       );
       wall.position.set(x, 0, z);
       wall.rotation.y = rotY;
+
       this.casingGroup.add(wall);
+
+      // Physics walls
+
+      const wallRotation = new CANNON.Quaternion();
+      wallRotation.setFromEuler(0, rotY, 0);
+
+      this.casingBody.addShape(
+        new CANNON.Box(
+          new CANNON.Vec3(halfLength, casingHalfHeight, this.wallThickness / 2),
+        ),
+        new CANNON.Vec3(x, 0, z),
+        wallRotation,
+      );
     }
+
+    // Casing floor
+    const casingFloor = new THREE.Mesh(
+      new THREE.PlaneGeometry(size, size),
+      new THREE.MeshStandardMaterial({ color }),
+    );
+    casingFloor.position.set(0, -this.wallHeight / 2, 0);
+    casingFloor.rotation.x = -Math.PI / 2;
+    this.casingGroup.add(casingFloor);
+
+    const casingFloorThickness = 0.1;
+    this.casingBody.addShape(
+      new CANNON.Box(
+        new CANNON.Vec3(size / 2, casingFloorThickness / 2, size / 2),
+      ),
+      new CANNON.Vec3(0, -this.wallHeight / 2 - casingFloorThickness / 2, 0),
+    );
+    world.addBody(this.casingBody);
   }
 }

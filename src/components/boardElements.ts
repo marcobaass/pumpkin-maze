@@ -3,7 +3,7 @@ import * as CANNON from "cannon-es";
 import { world, pumpkinMaterial } from "../system/physics";
 
 export class Pumpkin {
-  pumpkinSize: number = 0.25;
+  pumpkinSize: number = 0.175;
   pumpkinGeometry = new THREE.SphereGeometry(this.pumpkinSize, 32, 32);
   pumpkinMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
   pumpkinMesh = new THREE.Mesh(this.pumpkinGeometry, this.pumpkinMaterial);

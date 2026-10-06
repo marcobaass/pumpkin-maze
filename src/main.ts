@@ -72,7 +72,7 @@ window.addEventListener("resize", () => {
 });
 
 // Loop
-const maxTilt = 0.25;
+const maxTilt = 0.15;
 const currentTilt = {
   x: 0,
   z: 0,

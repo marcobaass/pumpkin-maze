@@ -3,202 +3,181 @@
 > **Guiding rule:** Make it playable first. Make it beautiful second.
 >
 > The player controls the board, not the pumpkin.
-> Design detail lives in [project.md](project.md).
+> Game rules live in [rules.md](rules.md). Design detail lives in [project.md](project.md).
 >
-> **Physics:** use [`cannon-es`](https://github.com/pmndrs/cannon-es) (not the old `cannon` package). Keep physics bodies separate from Three.js visuals; sync body → mesh each frame.
+> **Physics:** [`cannon-es`](https://github.com/pmndrs/cannon-es). Fixed blockers on the tray → shapes on kinematic `trayBody` + meshes in `trayGroup`. Moving hazards and the pumpkin → separate bodies posed/synced each frame.
 
 Priority order: **Feel → Gameplay → Level design → Interaction → Visual identity → Polish**
 
 ---
 
+## Game rules (from rules.md)
+
+### Win
+
+- Collect **all candy**
+
+### Lose
+
+- Pumpkin falls **off the tray**
+- Pumpkin falls into a **grave** (hole)
+- Pumpkin hits a **ghost** (moving)
+- Pumpkin hits a **skeleton** (stationary)
+
+### Items
+
+| Item     | Role              | Physics notes                                                          |
+| -------- | ----------------- | ---------------------------------------------------------------------- |
+| Pumpkin  | Player ball       | Dynamic sphere body; visual follows body                               |
+| Candy    | Collectible       | Trigger / overlap; remove on collect                                   |
+| Ghost    | Moving hazard     | Separate kinematic body; patrol in tray-local space; collide = lose    |
+| Skeleton | Stationary hazard | Shape on `trayBody` (or static collider glued to tray); collide = lose |
+| Candle   | Blocking prop     | Shape on `trayBody` + mesh in `trayGroup`                              |
+| Grave    | Hole / fail zone  | Not a solid blocker — gap or sensor; over grave + fall = lose          |
+
+---
+
 ## Setup
 
-Deps (`three`, `gsap`, `lil-gui`) are already installed. Start from the Vite scaffold.
-
 - [x] Strip Vite starter UI from `src/main.ts` / `index.html`
-- [x] Create Three.js scene: renderer, scene, lights placeholder, resize handler, animation loop
+- [x] Create Three.js scene: renderer, scene, lights, resize, animation loop
 - [x] Install `cannon-es`
-- [ ] Add a lightweight folder scaffold as needed (`components/`, `systems/`, `levels/`, `utils/`) — do not over-engineer before the prototype exists
-- [ ] Create a physics world helper (e.g. `systems/physics.ts`): `World`, gravity, broadphase/solver defaults
-- [ ] Step the world every frame (`world.fixedStep()` / `step`)
-- [ ] Sync pattern: after each physics step, copy body position/quaternion → matching mesh
+- [x] Physics world helper (`src/system/physics.ts`): world, gravity, materials, step
+- [x] Step world each frame; sync pumpkin body → mesh
+- [ ] Lightweight folders as needed (`components/`, `systems/`, `levels/`) — grow only when useful
+- [ ] lil-gui for feel tuning (gravity, maxTilt, maxTraySpinSpeed, damping)
 
 ---
 
 ## Phase 1 — Basic Prototype (Feel)
 
-Goal: test the fundamental tilt → roll loop with generic geometry + Cannon. No Halloween theme.
+Goal: tilt → roll feels good. Generic geometry OK.
 
-- [x] Orthographic (isometric-style) camera framed on the full board
-- [x] Simple rectangular board mesh
-- [x] Simple walls around the board
-- [x] Simple sphere as the rolling object
+- [x] Orthographic camera
+- [x] Tray mesh + rim walls in `trayGroup`
+- [x] Fixed casing (visual)
+- [x] Prototype sphere (pumpkin stand-in)
+- [x] Mouse tilt with diagonal mapping for isometric view
+- [x] Capped tray spin (`angularVelocity`) instead of teleporting rotation
+- [x] Compound kinematic `trayBody` (floor + wall shapes)
+- [x] Sync tray visual ↔ tray physics after each step
+- [x] Contact materials (tray ↔ pumpkin)
+- [ ] Casing physics so a ball that leaves the tray can bounce off / be contained for fail detection
+- [ ] Detect “fallen off tray” → lose / reset
+- [x] Feel gate: counter-steer is reliable; ball does not tunnel on fast tilts (thicken floor if needed)
 
-### Input & tray tilt
-
-- [x] Mouse input that drives board rotation
-- [x] Smooth/interpolate tray tilt (do not snap rotation directly from mouse input)
-- [x] Tilt **tray only** (`trayGroup`); casing stays fixed
-
-### Cannon bodies
-
-- [x] Cannon ground body matching the tray floor (box or plane)
-- [x] Cannon wall bodies matching the rim walls
-- [x] Cannon sphere body for the pumpkin (radius = visual sphere radius)
-- [x] Decide tilt approach for v1:
-  - rotate tray physics bodies with the visual tray, **or**
-  - keep bodies fixed and set `world.gravity` from tilt angle
-- [x] Wire visuals ↔ bodies (tray meshes ↔ tray bodies, pumpkin mesh ↔ sphere body)
-- [ ] Add physics body to casing so when pumpkin falls of tray still bounce of casing
-
-### Feel gate
-
-- [ ] Tune mass, friction, restitution, and max tilt until counter-steer feels good
-- [ ] Sphere stays on the board via Cannon collisions (no DIY wall math)
-
-**Gate — do not proceed until this feels good:** keyboard → board tilts → sphere responds with inertia → counter-steer works.
+**Gate:** mouse → tray tilts → ball rolls with inertia → counter-steer works. Do not theme yet.
 
 ---
 
-## Phase 2 — Holes
+## Phase 2 — Graves (holes)
 
-Introduce the main failure mechanic. Cannon does not model holes for free — use gameplay detection on top of physics.
+Lose if the pumpkin falls into a grave.
 
-- [ ] Add several hole visuals / regions on the board
-- [ ] Detect when the sphere is over a hole (trigger volumes, overlap checks, or similar)
-- [ ] Let the sphere fall through (disable floor support / allow gravity to take it)
-- [ ] Reset the sphere body + mesh to the start after a fall
-
----
-
-## Phase 3 — Level Design (First Maze)
-
-First hand-designed maze using primitive geometry + matching Cannon colliders. Prefer a small, readable puzzle board.
-
-- [ ] Design one small maze layout (walls, narrow passages, open areas, dead ends, holes)
-- [ ] Create Cannon bodies for inner maze walls (not only the rim)
-- [ ] Place holes so the player must manage momentum and counter-steer
-- [ ] Verify the level is understandable at a glance from the orthographic camera
-- [ ] Keep focusing on control feel, not graphics
+- [ ] Grave visuals / hole regions on the tray
+- [ ] Detect pumpkin over a grave (sensor, overlap, or floor gap)
+- [ ] Allow fall-through / fail when appropriate
+- [ ] Reset pumpkin (and clear velocities) after a grave fail
 
 ---
 
-## Phase 4 — Candy & Objective
+## Phase 3 — First maze layout
 
-Introduce the win path: collect all candy, then reach the exit.
+Small, readable hand-designed board. Primitive geometry + `trayBody` shapes.
 
-- [ ] Add candy collectibles to the level
-- [ ] Collection detection (Cannon contact/trigger or distance check)
-- [ ] Remove / hide candy on collect
-- [ ] Candy counter UI (`CANDY x / y`)
-- [ ] Place some candy in risky spots (near holes, behind obstacles, narrow corridors)
-- [ ] Add an exit that stays locked until all candy is collected
-- [ ] Unlock exit and allow win when the sphere reaches it after full collection
+- [ ] Inner walls / passages / dead ends as tray shapes + meshes
+- [ ] Place graves so momentum management matters
+- [ ] Place **candles** as blocking props on `trayBody`
+- [ ] Place **skeletons** as stationary lose-on-contact blockers on the tray
+- [ ] Keep orthographic readability
 
 ---
 
-## Phase 5 — Pumpkin Model
+## Phase 4 — Candy (win condition)
 
-Replace the prototype sphere visual with a custom pumpkin. **Keep the Cannon sphere collider.**
+Win = collect all candy (no exit required for v1 unless we add one later).
 
-- [ ] Model a simple pumpkin in Blender (body, grooves, stem; optional carved face)
-- [ ] Export as GLB/GLTF and load in Three.js
-- [ ] Keep the Cannon sphere body as the physics collider
-- [ ] Attach the pumpkin visual so it follows the physics body each frame
-- [ ] Sync visual rolling rotation with the physics body quaternion / velocity
-
----
-
-## Phase 6 — Halloween Environment
-
-Replace generic obstacles with themed assets. Aim for a miniature Halloween diorama / wooden toy look.
-
-- [ ] Gravestones as primary walls / obstacles (update visuals; keep/adjust Cannon colliders)
-- [ ] Wooden fences
-- [ ] Dead trees, rocks, candles, pumpkin decorations, spider webs
-- [ ] Wooden board material / board presentation
-- [ ] Keep composition readable from the orthographic camera
+- [ ] Candy meshes on the board
+- [ ] Collection detection (trigger / distance / contact)
+- [ ] Remove candy on collect; update counter `CANDY x / y`
+- [ ] Risky placements (near graves, skeletons, narrow paths)
+- [ ] Win state when `collected === total`
 
 ---
 
-## Phase 7 — Moving Spiders
+## Phase 5 — Ghosts (moving hazards)
 
-First moving enemy. No AI, chasing, or complex rigging in v1.
+Lose on ghost contact. No complex AI in v1.
 
-- [ ] Build a procedural spider from simple geometry (body, head, 8 legs, eyes)
-- [ ] Define patrol paths for spiders
-- [ ] Move spiders continuously along their paths (kinematic body or synced collider)
-- [ ] Detect spider–pumpkin collision (Cannon contact)
-- [ ] Apply penalty / reset on collision
-- [ ] Add simple leg / body motion synced to patrol movement
-
----
-
-## Phase 8 — Game Rules & Loop
-
-Establish a complete, simple game loop once mechanics work.
-
-- [ ] Start state: pumpkin, lives, level with candy
-- [ ] Fail state: hole or spider → lose a life + checkpoint return or level reset (reset physics body state)
-- [ ] Complete state: all candy collected → exit unlocked → reach exit to win
-- [ ] Basic HUD for lives, candy count, and exit status
-- [ ] Keep the first fail/recover implementation simple
+- [ ] Ghost visual (simple / procedural geometry first)
+- [ ] Patrol paths in **tray-local** space
+- [ ] Kinematic ghost body updated each frame from tray transform + local path
+- [ ] Contact with pumpkin → lose / reset
+- [ ] Simple motion animation (bob / drift) synced to patrol
 
 ---
 
-## Phase 9 — Level Progression
+## Phase 6 — Game loop
 
-Several small hand-designed levels. Only add Level 5 special mechanics after the core is polished.
-
-- [ ] Level 1 — Pumpkin Patch: basic walls, few holes, easy candy
-- [ ] Level 2 — Graveyard: denser walls, narrow passages, more holes
-- [ ] Level 3 — Spider Graveyard: patrol spiders + risky candy placement
-- [ ] Level 4 — Haunted Woods: trees, more complex paths, multiple hazards
-- [ ] Level transitions between levels
-- [ ] Level 5 — Witch's Graveyard (optional later): teleport holes, moving obstacles, webs, temporary hazards
+- [ ] Start: pumpkin at spawn, candy count, lives (optional but simple)
+- [ ] Fail: off-tray / grave / ghost / skeleton → life lost or restart; reset body state
+- [ ] Win: all candy collected
+- [ ] Basic HUD: candy, lives, status text
+- [ ] Keep fail/recover simple
 
 ---
 
-## Phase 10 — Visual Polish
+## Phase 7 — Pumpkin model
+
+- [ ] Blender pumpkin → GLB
+- [ ] Keep Cannon sphere collider
+- [ ] Visual follows physics body (position + roll)
+
+---
+
+## Phase 8 — Halloween look
+
+All listed props remain **blocking** unless explicitly changed later.
+
+- [ ] Theme tray / casing (wood, miniature toy)
+- [ ] Skeleton visuals for stationary hazards
+- [ ] Ghost visuals for moving hazards
+- [ ] Candle visuals (still colliders on `trayBody`)
+- [ ] Grave styling
+- [ ] Readable ortho composition
+
+---
+
+## Phase 9 — Levels
+
+Several small boards. Only add gimmicks after core rules feel good.
+
+- [ ] Level 1 — intro: few graves, candy, maybe one skeleton
+- [ ] Level 2 — denser walls + candles + more graves
+- [ ] Level 3 — add ghosts on patrol
+- [ ] Level 4 — combine all hazards + riskier candy
+- [ ] Level transitions
+- [ ] Optional later: extra mechanics (teleports, moving obstacles, etc.)
+
+---
+
+## Phase 10 — Polish
 
 Only after gameplay is solid.
 
-### Environment & lighting
-
-- [ ] Stylized materials for board and props
-- [ ] Moonlight directional light + warm candle lights + soft ambient
-- [ ] Contact shadows
-- [ ] Subtle atmospheric fog
-
-### Atmosphere & particles
-
-- [ ] Floating dust / fog particles
-- [ ] Small embers or fireflies
-- [ ] Candle flame animation
-- [ ] Subtle animated vegetation (keep effects readable)
-
-### Feel animations
-
-- [ ] Pumpkin: squash/stretch on hits, bounce on candy collect, spin when falling, wobble after collisions
-- [ ] Candy: gentle float, slow rotation, collect bounce
-- [ ] Board tilt smoothing refined
-- [ ] Camera transitions (GSAP)
-
-### Audio & UI
-
-- [ ] Sound effects / ambience
-- [ ] Polished UI (start, HUD, win/lose, level transitions)
+- [ ] Lighting (moonlight + candle warmth), shadows, fog
+- [ ] Subtle particles / flame flicker
+- [ ] Feel animations (pumpkin, candy, ghosts)
+- [ ] Camera / UI transitions (GSAP)
+- [ ] Sound + polished HUD / win-lose screens
 
 ---
 
 ## Explicitly defer early
 
-Do not start with these until the core tilt/roll loop and basic gameplay are fun:
-
-- Complex spider rigging or advanced enemy AI
-- Procedural level generation
-- Complex shaders / detailed Blender environments
+- Complex ghost AI / chasing
+- Procedural levels
+- Heavy shaders / huge Blender dioramas
 - Multiplayer
-- Large levels or complicated UI
-- Custom hand-rolled physics (use `cannon-es` instead)
-- Over-engineered physics architecture beyond a simple world + body sync
+- Over-engineered physics beyond tray compound + synced movers
+- Hand-rolled physics (stay on `cannon-es`)
