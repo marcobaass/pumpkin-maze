@@ -1,10 +1,13 @@
 import * as THREE from "three";
+import * as CANNON from "cannon-es";
+import { world, trayMaterial } from "../system/physics";
 
 export class Board {
   trayGroup = new THREE.Group();
   casingGroup = new THREE.Group();
   wallHeight = 0.5;
   wallThickness = 0.25;
+  trayBody = new CANNON.Body({ type: CANNON.Body.KINEMATIC });
 
   constructor() {
     const size = 10;
@@ -15,13 +18,17 @@ export class Board {
 
     this.createTray(size, color, half);
     this.createCasing(size, gap, casingColor, half);
+    this.trayBody.material = trayMaterial;
   }
 
   private createTray(size: number, color: number, half: number) {
+    this.trayGroup.position.set(0, this.wallHeight, 0);
+    this.trayBody.position.set(0, this.wallHeight, 0);
+
     const boardMaterial = new THREE.MeshStandardMaterial({ color });
     const wallMaterial = new THREE.MeshStandardMaterial({ color });
 
-    // Floor
+    // Floor (visual)
     const boardMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(size, size),
       boardMaterial,
@@ -29,7 +36,14 @@ export class Board {
     boardMesh.rotation.x = -Math.PI / 2;
     this.trayGroup.add(boardMesh);
 
-    // Two wall on x axis
+    // Floor (physics)
+    const floorThickness = 1;
+    this.trayBody.addShape(
+      new CANNON.Box(new CANNON.Vec3(size / 2, floorThickness / 2, size / 2)),
+      new CANNON.Vec3(0, -floorThickness / 2, 0),
+    );
+
+    // Walls (visual)
     const wallGeoZ = new THREE.BoxGeometry(
       size,
       this.wallHeight,
@@ -41,20 +55,53 @@ export class Board {
       this.wallThickness,
     );
 
+    const halfLengthZ = size / 2;
+    const halfLengthX = (size + this.wallThickness * 2) / 2;
+
     const wallConfigs = [
-      { geo: wallGeoZ, x: 0, z: -half, rotY: 0 },
-      { geo: wallGeoZ, x: 0, z: half, rotY: 0 },
-      { geo: wallGeoX, x: -half, z: 0, rotY: Math.PI / 2 },
-      { geo: wallGeoX, x: half, z: 0, rotY: Math.PI / 2 },
+      { geo: wallGeoZ, halfLength: halfLengthZ, x: 0, z: -half, rotY: 0 },
+      { geo: wallGeoZ, halfLength: halfLengthZ, x: 0, z: half, rotY: 0 },
+      {
+        geo: wallGeoX,
+        halfLength: halfLengthX,
+        x: -half,
+        z: 0,
+        rotY: Math.PI / 2,
+      },
+      {
+        geo: wallGeoX,
+        halfLength: halfLengthX,
+        x: half,
+        z: 0,
+        rotY: Math.PI / 2,
+      },
     ];
 
-    for (const { geo, x, z, rotY } of wallConfigs) {
+    for (const { geo, halfLength, x, z, rotY } of wallConfigs) {
+      // Visual wall
       const wall = new THREE.Mesh(geo, wallMaterial);
       wall.position.set(x, this.wallHeight / 2, z);
       wall.rotation.y = rotY;
       this.trayGroup.add(wall);
+
+      // Physics wall
+      const wallRotation = new CANNON.Quaternion();
+      wallRotation.setFromEuler(0, rotY, 0);
+
+      this.trayBody.addShape(
+        new CANNON.Box(
+          new CANNON.Vec3(
+            halfLength,
+            this.wallHeight / 2,
+            this.wallThickness / 2,
+          ),
+        ),
+        new CANNON.Vec3(x, this.wallHeight / 2, z),
+        wallRotation,
+      );
     }
-    this.trayGroup.position.set(0, this.wallHeight * 2 - this.wallHeight, 0);
+
+    world.addBody(this.trayBody);
   }
 
   // Casing

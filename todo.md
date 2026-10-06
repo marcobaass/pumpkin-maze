@@ -37,18 +37,19 @@ Goal: test the fundamental tilt → roll loop with generic geometry + Cannon. No
 ### Input & tray tilt
 
 - [x] Mouse input that drives board rotation
-- [ ] Smooth/interpolate tray tilt (do not snap rotation directly from mouse input)
+- [x] Smooth/interpolate tray tilt (do not snap rotation directly from mouse input)
 - [x] Tilt **tray only** (`trayGroup`); casing stays fixed
 
 ### Cannon bodies
 
-- [ ] Cannon ground body matching the tray floor (box or plane)
-- [ ] Cannon wall bodies matching the rim walls
-- [ ] Cannon sphere body for the pumpkin (radius = visual sphere radius)
-- [ ] Decide tilt approach for v1:
+- [x] Cannon ground body matching the tray floor (box or plane)
+- [x] Cannon wall bodies matching the rim walls
+- [x] Cannon sphere body for the pumpkin (radius = visual sphere radius)
+- [x] Decide tilt approach for v1:
   - rotate tray physics bodies with the visual tray, **or**
   - keep bodies fixed and set `world.gravity` from tilt angle
-- [ ] Wire visuals ↔ bodies (tray meshes ↔ tray bodies, pumpkin mesh ↔ sphere body)
+- [x] Wire visuals ↔ bodies (tray meshes ↔ tray bodies, pumpkin mesh ↔ sphere body)
+- [ ] Add physics body to casing so when pumpkin falls of tray still bounce of casing
 
 ### Feel gate
 

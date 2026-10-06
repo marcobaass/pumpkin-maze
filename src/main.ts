@@ -3,6 +3,8 @@ import * as THREE from "three";
 import { Board } from "./components/Board";
 import { Pumpkin } from "./components/boardElements";
 import { cursor } from "./system/input";
+import { world, step } from "./system/physics";
+import { Body } from "cannon-es";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const sizes = {
@@ -71,13 +73,53 @@ window.addEventListener("resize", () => {
 
 // Loop
 const maxTilt = 0.25;
+const currentTilt = {
+  x: 0,
+  z: 0,
+};
+const maxTraySpinSpeed = 8;
+const time = new THREE.Timer();
 
 const tick = () => {
-  const tiltX = (cursor.x - cursor.y) * maxTilt;
-  const tiltZ = (cursor.x + cursor.y) * maxTilt;
+  time.update();
+  const deltaTime = Math.min(time.getDelta(), 0.05);
 
-  board.trayGroup.rotation.x = tiltX;
-  board.trayGroup.rotation.z = tiltZ;
+  // tilt tray
+  const targetTilt = {
+    x: -(cursor.x - cursor.y) * maxTilt,
+    z: -(cursor.x + cursor.y) * maxTilt,
+  };
+
+  const remainingTiltX = targetTilt.x - currentTilt.x;
+  const remainingTiltZ = targetTilt.z - currentTilt.z;
+  const traySpinX = THREE.MathUtils.clamp(
+    remainingTiltX / deltaTime,
+    -maxTraySpinSpeed,
+    maxTraySpinSpeed,
+  );
+  const traySpinZ = THREE.MathUtils.clamp(
+    remainingTiltZ / deltaTime,
+    -maxTraySpinSpeed,
+    maxTraySpinSpeed,
+  );
+
+  board.trayBody.angularVelocity.set(traySpinX, 0, traySpinZ);
+
+  step();
+
+  currentTilt.x += traySpinX * deltaTime;
+  currentTilt.z += traySpinZ * deltaTime;
+
+  board.trayGroup.rotation.x = currentTilt.x;
+  board.trayGroup.rotation.z = currentTilt.z;
+  board.trayBody.quaternion.setFromEuler(currentTilt.x, 0, currentTilt.z);
+  board.trayBody.angularVelocity.set(0, 0, 0);
+
+  // copy pumpkin physics body position to visual mesh
+  const p = pumpkin.body.position;
+  pumpkin.pumpkinMesh.position.set(p.x, p.y, p.z);
+  const q = pumpkin.body.quaternion;
+  pumpkin.pumpkinMesh.quaternion.set(q.x, q.y, q.z, q.w);
 
   renderer.render(scene, camera);
   requestAnimationFrame(tick);
