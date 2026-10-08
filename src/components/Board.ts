@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import { world, trayMaterial } from "../system/physics";
+import { createGravestone } from "./props/Gravestone";
+import { storageElement } from "three/tsl";
 
 export class Board {
   trayGroup = new THREE.Group();
@@ -18,6 +20,7 @@ export class Board {
     const half = size / 2 + this.wallThickness / 2;
 
     this.createTray(size, color, half);
+    this.placeGravestone();
     this.createCasing(size, gap, casingColor, half);
     this.trayBody.material = trayMaterial;
     this.casingBody.material = trayMaterial;
@@ -104,6 +107,30 @@ export class Board {
     }
 
     world.addBody(this.trayBody);
+  }
+
+  // Props
+  private placeGravestone() {
+    const placements = [
+      { x: -3, z: -2, rotY: 0 },
+      { x: -3, z: 1, rotY: Math.PI / 4 },
+      { x: 0, z: 3, rotY: 0 },
+      { x: 3, z: 0, rotY: Math.PI / 2 },
+      { x: 1, z: 1, rotY: Math.PI / 3 },
+    ];
+
+    const gravestoneHeight = 1;
+
+    for (const p of placements) {
+      const localPos = new THREE.Vector3(p.x, gravestoneHeight / 2, p.z);
+      const stone = createGravestone(localPos, p.rotY);
+      this.trayGroup.add(stone.mesh);
+      this.trayBody.addShape(
+        new CANNON.Box(stone.collisionShape.halfExtents),
+        stone.collisionShape.offset,
+        stone.collisionShape.orientation,
+      );
+    }
   }
 
   // Casing

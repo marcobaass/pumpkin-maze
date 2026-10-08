@@ -1,7 +1,7 @@
 import "./style.css";
 import * as THREE from "three";
 import { Board } from "./components/Board";
-import { Pumpkin } from "./components/boardElements";
+import { Pumpkin } from "./components/Pumpkin";
 import { cursor } from "./system/input";
 import { world, step } from "./system/physics";
 
