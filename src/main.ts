@@ -4,7 +4,6 @@ import { Board } from "./components/Board";
 import { Pumpkin } from "./components/boardElements";
 import { cursor } from "./system/input";
 import { world, step } from "./system/physics";
-import { Body } from "cannon-es";
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const sizes = {
@@ -40,7 +39,6 @@ camera.lookAt(0, 0, 0);
 
 // Board
 const board = new Board();
-console.log(board);
 
 scene.add(board.trayGroup);
 scene.add(board.casingGroup);
@@ -72,11 +70,13 @@ window.addEventListener("resize", () => {
 });
 
 // Loop
-const maxTilt = 0.15;
+
 const currentTilt = {
   x: 0,
   z: 0,
 };
+const maxTilt = 0.07;
+const tiltRadius = 200;
 const maxTraySpinSpeed = 8;
 const time = new THREE.Timer();
 
@@ -85,9 +85,20 @@ const tick = () => {
   const deltaTime = Math.min(time.getDelta(), 0.05);
 
   // tilt tray
+  const trayNdc = board.trayGroup.position.clone().project(camera);
+
+  const trayScreenX = (trayNdc.x * 0.5 + 0.5) * sizes.width;
+  const trayScreenY = (-trayNdc.y * 0.5 + 0.5) * sizes.height;
+
+  const offsetX = cursor.x - trayScreenX;
+  const offsetY = cursor.y - trayScreenY;
+
+  const nx = THREE.MathUtils.clamp(offsetX / tiltRadius, -1, 1);
+  const ny = THREE.MathUtils.clamp(offsetY / tiltRadius, -1, 1);
+
   const targetTilt = {
-    x: -(cursor.x - cursor.y) * maxTilt,
-    z: -(cursor.x + cursor.y) * maxTilt,
+    x: -(nx - ny) * maxTilt,
+    z: -(nx + ny) * maxTilt,
   };
 
   const remainingTiltX = targetTilt.x - currentTilt.x;

@@ -62,9 +62,10 @@ Goal: tilt → roll feels good. Generic geometry OK.
 - [x] Compound kinematic `trayBody` (floor + wall shapes)
 - [x] Sync tray visual ↔ tray physics after each step
 - [x] Contact materials (tray ↔ pumpkin)
-- [ ] Casing physics so a ball that leaves the tray can bounce off / be contained for fail detection
-- [ ] Detect “fallen off tray” → lose / reset
+- [x] Casing physics so a ball that leaves the tray can bounce off / be contained for fail detection
 - [x] Feel gate: counter-steer is reliable; ball does not tunnel on fast tilts (thicken floor if needed)
+- [x] change tray tilt based on distance to the center of the tray, not window size
+- [ ] Detect “fallen off tray” → lose / reset
 
 **Gate:** mouse → tray tilts → ball rolls with inertia → counter-steer works. Do not theme yet.
 
