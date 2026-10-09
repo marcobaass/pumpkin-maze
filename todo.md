@@ -75,9 +75,9 @@ Goal: tilt → roll feels good. Generic geometry OK.
 
 Lose if the pumpkin falls into a grave.
 
-- [ ] Grave visuals / hole regions on the tray
-- [ ] Detect pumpkin over a grave (sensor, overlap, or floor gap)
-- [ ] Allow fall-through / fail when appropriate
+- [x] Grave visuals / hole regions on the tray
+- [x] Detect pumpkin over a grave (sensor, overlap, or floor gap)
+- [x] Allow fall-through / fail when appropriate
 - [ ] Reset pumpkin (and clear velocities) after a grave fail
 
 ---
@@ -86,8 +86,8 @@ Lose if the pumpkin falls into a grave.
 
 Small, readable hand-designed board. Primitive geometry + `trayBody` shapes.
 
-- [ ] Inner walls / passages / dead ends as tray shapes + meshes
-- [ ] Place graves so momentum management matters
+- [x] Inner walls / passages / dead ends as tray shapes + meshes
+- [x] Place graves so momentum management matters
 - [ ] Place **candles** as blocking props on `trayBody`
 - [ ] Place **skeletons** as stationary lose-on-contact blockers on the tray
 - [ ] Keep orthographic readability

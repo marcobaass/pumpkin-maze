@@ -3,6 +3,7 @@ import * as CANNON from "cannon-es";
 import { world, trayMaterial } from "../system/physics";
 import { createGravestone, graves } from "./props/Gravestone";
 import { BOARD_SIZE, TILES_COUNT } from "./config/BoardConfig";
+import { candys, createCandy } from "./props/Candy";
 
 export class Board {
   trayGroup = new THREE.Group();
@@ -21,6 +22,7 @@ export class Board {
 
     this.createTray(size, color, half);
     this.placeGravestone(size);
+    this.placeCandy(size);
     this.createCasing(size, gap, casingColor, half);
     this.trayBody.material = trayMaterial;
     this.casingBody.material = trayMaterial;
@@ -168,6 +170,34 @@ export class Board {
         new CANNON.Box(stone.collisionShape.halfExtents),
         stone.collisionShape.offset,
         stone.collisionShape.orientation,
+      );
+    }
+  }
+
+  private placeCandy(size: number) {
+    const tilesCount = TILES_COUNT;
+    const tileSize = size / tilesCount;
+    const candyHeight = 0.25;
+
+    for (const candy of candys) {
+      let x = (candy.i + 0.5) * tileSize - size / 2;
+      let z = (candy.j + 0.5) * tileSize - size / 2;
+      const depth = 0.25;
+
+      const localPos = new THREE.Vector3(x, candyHeight / 2, z);
+      const candyObj = createCandy(
+        localPos,
+        candy.rotY,
+        candyHeight,
+        depth,
+        tileSize,
+      );
+
+      this.trayGroup.add(candyObj.mesh);
+      this.trayBody.addShape(
+        new CANNON.Box(candyObj.collisionShape.halfExtents),
+        candyObj.collisionShape.offset,
+        candyObj.collisionShape.orientation,
       );
     }
   }
