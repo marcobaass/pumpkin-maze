@@ -1,9 +1,22 @@
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 
-export function createGravestone(localPos: THREE.Vector3, rotY = 0) {
+export const graves = [
+  { i: 3, j: 2, side: "n" as const },
+  { i: 6, j: 5, side: "w" as const },
+  { i: 7, j: 2, side: "n" as const },
+  { i: 1, j: 9, side: "w" as const },
+];
+
+export function createGravestone(
+  localPos: THREE.Vector3,
+  rotY = 0,
+  height = 0.75,
+  depth = 0.2,
+  tileSize: number,
+) {
   // Gravestone Mesurement
-  const gravestoneSize = { width: 1, height: 1, depth: 0.3 };
+  const gravestoneSize = { width: tileSize, height, depth };
 
   const mesh = new THREE.Mesh(
     new THREE.BoxGeometry(

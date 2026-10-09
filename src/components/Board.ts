@@ -1,8 +1,7 @@
 import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import { world, trayMaterial } from "../system/physics";
-import { createGravestone } from "./props/Gravestone";
-import { storageElement } from "three/tsl";
+import { createGravestone, graves } from "./props/Gravestone";
 
 export class Board {
   trayGroup = new THREE.Group();
@@ -20,7 +19,7 @@ export class Board {
     const half = size / 2 + this.wallThickness / 2;
 
     this.createTray(size, color, half);
-    this.placeGravestone();
+    this.placeGravestone(size);
     this.createCasing(size, gap, casingColor, half);
     this.trayBody.material = trayMaterial;
     this.casingBody.material = trayMaterial;
@@ -33,20 +32,41 @@ export class Board {
     const boardMaterial = new THREE.MeshStandardMaterial({ color });
     const wallMaterial = new THREE.MeshStandardMaterial({ color });
 
-    // Floor (visual)
-    const boardMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(size, size),
-      boardMaterial,
-    );
-    boardMesh.rotation.x = -Math.PI / 2;
-    this.trayGroup.add(boardMesh);
+    // Floor Tiles visual
+    const tilesCount = 15;
+    const tileSize = size / tilesCount;
 
-    // Floor (physics)
-    const floorThickness = 1;
-    this.trayBody.addShape(
-      new CANNON.Box(new CANNON.Vec3(size / 2, floorThickness / 2, size / 2)),
-      new CANNON.Vec3(0, -floorThickness / 2, 0),
-    );
+    for (let i = 0; i < tilesCount; i++) {
+      for (let j = 0; j < tilesCount; j++) {
+        const isGrave = graves.some((grave) => grave.i === i && grave.j === j);
+
+        if (isGrave) {
+          continue;
+        }
+
+        const tile = new THREE.Mesh(
+          new THREE.PlaneGeometry(tileSize, tileSize),
+          boardMaterial,
+        );
+
+        tile.position.set(
+          i * tileSize - size / 2 + tileSize / 2,
+          0,
+          j * tileSize - size / 2 + tileSize / 2,
+        );
+        tile.rotation.x = -Math.PI / 2;
+        this.trayGroup.add(tile);
+
+        this.trayBody.addShape(
+          new CANNON.Box(new CANNON.Vec3(tileSize / 2, 0.1, tileSize / 2)),
+          new CANNON.Vec3(
+            i * tileSize - size / 2 + tileSize / 2,
+            0,
+            j * tileSize - size / 2 + tileSize / 2,
+          ),
+        );
+      }
+    }
 
     // Walls (visual)
     const wallGeoZ = new THREE.BoxGeometry(
@@ -110,20 +130,38 @@ export class Board {
   }
 
   // Props
-  private placeGravestone() {
-    const placements = [
-      { x: -3, z: -2, rotY: 0 },
-      { x: -3, z: 1, rotY: Math.PI / 4 },
-      { x: 0, z: 3, rotY: 0 },
-      { x: 3, z: 0, rotY: Math.PI / 2 },
-      { x: 1, z: 1, rotY: Math.PI / 3 },
-    ];
+  private placeGravestone(size: number) {
+    const tilesCount = 15;
+    const tileSize = size / tilesCount;
+    const gravestoneHeight = 0.75;
 
-    const gravestoneHeight = 1;
+    for (const grave of graves) {
+      let x = (grave.i + 0.5) * tileSize - size / 2;
+      let z = (grave.j + 0.5) * tileSize - size / 2;
+      const depth = 0.2;
+      const dist = tileSize / 2;
 
-    for (const p of placements) {
-      const localPos = new THREE.Vector3(p.x, gravestoneHeight / 2, p.z);
-      const stone = createGravestone(localPos, p.rotY);
+      let rotY = 0;
+      switch (grave.side) {
+        case "n":
+          z -= dist + depth / 2;
+          rotY = 0;
+          break;
+        case "w": // -x
+          x -= dist + depth / 2;
+          rotY = Math.PI / 2;
+          break;
+      }
+
+      const localPos = new THREE.Vector3(x, gravestoneHeight / 2, z);
+      const stone = createGravestone(
+        localPos,
+        rotY,
+        gravestoneHeight,
+        depth,
+        tileSize,
+      );
+
       this.trayGroup.add(stone.mesh);
       this.trayBody.addShape(
         new CANNON.Box(stone.collisionShape.halfExtents),
