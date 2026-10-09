@@ -2,10 +2,17 @@ import * as THREE from "three";
 import * as CANNON from "cannon-es";
 
 export const graves = [
-  { i: 3, j: 2, side: "n" as const },
+  { i: 1, j: 6, side: "n" as const },
+  { i: 2, j: 2, side: "w" as const },
+  { i: 12, j: 3, side: "n" as const },
+  { i: 3, j: 9, side: "w" as const },
   { i: 6, j: 5, side: "w" as const },
+  { i: 12, j: 11, side: "n" as const },
+  { i: 6, j: 9, side: "n" as const },
+  { i: 8, j: 12, side: "w" as const },
+  { i: 11, j: 7, side: "w" as const },
   { i: 7, j: 2, side: "n" as const },
-  { i: 1, j: 9, side: "w" as const },
+  { i: 4, j: 13, side: "n" as const },
 ];
 
 export function createGravestone(

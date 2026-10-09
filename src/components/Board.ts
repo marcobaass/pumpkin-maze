@@ -2,6 +2,7 @@ import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import { world, trayMaterial } from "../system/physics";
 import { createGravestone, graves } from "./props/Gravestone";
+import { BOARD_SIZE, TILES_COUNT } from "./config/BoardConfig";
 
 export class Board {
   trayGroup = new THREE.Group();
@@ -12,7 +13,7 @@ export class Board {
   casingBody = new CANNON.Body({ type: CANNON.Body.STATIC });
 
   constructor() {
-    const size = 10;
+    const size = BOARD_SIZE;
     const gap = 0.3;
     const color = 0x888888;
     const casingColor = 0x666666;
@@ -33,7 +34,7 @@ export class Board {
     const wallMaterial = new THREE.MeshStandardMaterial({ color });
 
     // Floor Tiles visual
-    const tilesCount = 15;
+    const tilesCount = TILES_COUNT;
     const tileSize = size / tilesCount;
 
     for (let i = 0; i < tilesCount; i++) {
@@ -131,7 +132,7 @@ export class Board {
 
   // Props
   private placeGravestone(size: number) {
-    const tilesCount = 15;
+    const tilesCount = TILES_COUNT;
     const tileSize = size / tilesCount;
     const gravestoneHeight = 0.75;
 
